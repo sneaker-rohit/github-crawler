@@ -48,8 +48,24 @@ newtype HelloMessage = HelloMessage { msg :: String }
   deriving Generic
 instance ToJSON HelloMessage
 
+-- Data Handler for Group 1
+data RepoDataForProcessing = RepoDataForProcessing
+    {
+        git_url             :: String
+      , language            :: String
+    } deriving Generic
+instance ToJSON RepoDataForProcessing
 
--- Data Handler for group 3
+-- Data Handler for Group 2
+data RepoCommit = RepoCommit
+    {
+         repo_url                :: String
+       , number_of_commit        :: Int
+       , last_commit             :: String
+    } deriving Generic
+instance ToJSON RepoCommit
+
+-- Data Handler for Group 3
 data RepoInfo = RepoIno
     {   repo_name   :: String,
         owner       :: String,
@@ -106,18 +122,17 @@ server = hello
 
         postRepoInfo :: [RepoInfo] -> Handler RepoInfoResponse
         postRepoInfo repos = liftIO $ do
---             print "Hello world"
             c <- getChar
             let success = True
             let xs = map repo_name repos
-                msg = "the mes is " ++ [c]
-
+            let allInfo = map (\x -> getUserGithubInfo x) xs
+            print allInfo
             return $ RepoInfoResponse success
 
 -- Get User Github Info
--- getUserGithubInfo :: Maybe String -> String
--- getUserGithubInfo user = do
---     return $ possibleUser $ GH.executeRequest' $ GH.userInfoForR user
+getUserGithubInfo :: String -> String
+getUserGithubInfo user = liftIO $ do
+    return $ GH.executeRequest' $ GH.userInfoForR user
 
 -- | error stuff
 custom404Error msg = err404 { errBody = msg }
