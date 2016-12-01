@@ -48,7 +48,9 @@ newtype HelloMessage = HelloMessage { msg :: String }
   deriving Generic
 instance ToJSON HelloMessage
 
-data RepoInfo = RepoIno -- group 3
+
+-- Data Handler for group 3
+data RepoInfo = RepoIno
     {   repo_name   :: String,
         owner       :: String,
         token       :: String
@@ -56,10 +58,9 @@ data RepoInfo = RepoIno -- group 3
 instance ToJSON RepoInfo
 instance FromJSON RepoInfo
 
-data RepoInfoResponse = RepoInfoResponse -- response for group 3
+data RepoInfoResponse = RepoInfoResponse
     {
         success     :: Bool
---         success     :: String
     } deriving Generic
 instance ToJSON RepoInfoResponse
 
