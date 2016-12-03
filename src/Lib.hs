@@ -16,6 +16,8 @@ import           Prelude.Compat
 
 import           Data.Aeson.Types
 import           Data.List
+import           Data.String -- fromString
+import           Data.ByteString.Char8 (pack)
 import           Data.Maybe
 import           GHC.Generics
 
@@ -40,6 +42,12 @@ import           Data.Time.Clock              (UTCTime, getCurrentTime)
 import           Data.Time.Format             (defaultTimeLocale, formatTime)
 
 import qualified GitHub as GH
+import qualified GitHub.Endpoints.Users.Followers as GitHub
+import qualified GitHub.Endpoints.Users as Users
+import qualified GitHub.Auth as Auth
+
+-- loop for
+import           Control.Monad.Cont
 
 type API = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
       :<|> "post-repo-info" :> ReqBody '[JSON] [RepoInfo] :> Post '[JSON] RepoInfoResponse
@@ -120,19 +128,23 @@ server = hello
           Nothing -> "Hello, anonymous coward"
           Just n  -> "Hello, " ++ n
 
+        -- Process info from group 3
         postRepoInfo :: [RepoInfo] -> Handler RepoInfoResponse
         postRepoInfo repos = liftIO $ do
-            c <- getChar
+            -- Variables to store data from group 1 and group 2
+            let user_crawler = pack "vn09"
+            let user_token = pack "f918fe1ba0e130def60ecfdda482b56ff2467413"
+            let repoCommit = []
+            let repoPreProcess = []
             let success = True
-            let xs = map repo_name repos
-            let allInfo = map (\x -> getUserGithubInfo x) xs
-            print allInfo
-            return $ RepoInfoResponse success
 
--- Get User Github Info
-getUserGithubInfo :: String -> String
-getUserGithubInfo user = liftIO $ do
-    return $ GH.executeRequest' $ GH.userInfoForR user
+            let xs = map owner repos
+            forM_ xs $ \owner -> do
+                print owner
+                possibleUsers <- Users.userInfoFor' (Just (Auth.BasicAuth user_crawler user_token))  (fromString owner)
+                -- possibleUsers <- GitHub.usersFollowing (fromString owner)
+                print possibleUsers
+            return $ RepoInfoResponse success
 
 -- | error stuff
 custom404Error msg = err404 { errBody = msg }
