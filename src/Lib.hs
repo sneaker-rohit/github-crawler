@@ -19,6 +19,7 @@ import           Data.List
 import           Data.String -- fromString
 import           Data.ByteString.Char8 (pack)
 import           Data.Maybe
+import qualified Data.Text as T
 import           GHC.Generics
 
 import           Servant
@@ -42,10 +43,12 @@ import           Data.Time.Clock              (UTCTime, getCurrentTime)
 import           Data.Time.Format             (defaultTimeLocale, formatTime)
 
 import qualified GitHub as GH
-import qualified GitHub.Endpoints.Users.Followers as GitHub
+import qualified GitHub.Endpoints.Users.Followers as Followers
 import qualified GitHub.Endpoints.Users as Users
+import qualified GitHub.Endpoints.Repos as Repos
 import qualified GitHub.Auth as Auth
 
+import qualified Data.HashMap.Strict as HM
 -- loop for
 import           Control.Monad.Cont
 
@@ -60,7 +63,7 @@ instance ToJSON HelloMessage
 data RepoDataForProcessing = RepoDataForProcessing
     {
         git_url             :: String
-      , language            :: String
+      , language            :: [String]
     } deriving Generic
 instance ToJSON RepoDataForProcessing
 
@@ -87,6 +90,10 @@ data RepoInfoResponse = RepoInfoResponse
         success     :: Bool
     } deriving Generic
 instance ToJSON RepoInfoResponse
+
+user_crawler = pack "vn09"
+user_token = pack "42e9ebf734bdc37cc99fc933d8724f8eaf6b2290"
+auth = (Just (Auth.BasicAuth user_crawler user_token))
 
 -- Start server here
 startApp :: IO ()    -- set up wai logger for service to output apache style logging for rest calls
@@ -132,19 +139,31 @@ server = hello
         postRepoInfo :: [RepoInfo] -> Handler RepoInfoResponse
         postRepoInfo repos = liftIO $ do
             -- Variables to store data from group 1 and group 2
-            let user_crawler = pack "vn09"
-            let user_token = pack "f918fe1ba0e130def60ecfdda482b56ff2467413"
             let repoCommit = []
             let repoPreProcess = []
             let success = True
 
-            let xs = map owner repos
-            forM_ xs $ \owner -> do
-                print owner
-                possibleUsers <- Users.userInfoFor' (Just (Auth.BasicAuth user_crawler user_token))  (fromString owner)
-                -- possibleUsers <- GitHub.usersFollowing (fromString owner)
-                print possibleUsers
+            forM_ repos $ \repo -> do
+                let (h_owner, h_repo_name, h_token) = (g_repo_owner, g_repo_name, g_token)
+                                            where g_repo_owner = owner repo
+                                                  g_repo_name = repo_name repo
+                                                  g_token     = token repo
+
+                possibleUsers <- Users.userInfoFor' auth (fromString h_owner)
+                possibleLanguages <- Repos.languagesFor' auth (fromString h_owner) (fromString h_repo_name)
+                case possibleLanguages of
+                    (Left error) -> print ""
+                    (Right languages) -> do
+                        let listLanguagesKey = HM.keys languages
+                        let listLanguages = map getLanguage listLanguagesKey
+                        print listLanguages
+                print possibleLanguages
+
             return $ RepoInfoResponse success
+
+getLanguage (Repos.Language name) = name
+userGithubGetId :: Users.Name Users.User -> T.Text
+userGithubGetId login = Users.untagName login
 
 -- | error stuff
 custom404Error msg = err404 { errBody = msg }
