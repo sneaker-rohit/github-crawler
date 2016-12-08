@@ -5,6 +5,7 @@ module Followers where
  
 --import qualified GitHub.Endpoints.Users.Followers as GitHub
 import qualified GitHub.Endpoints.Repos.Commits as Github
+import GitHub.Data.Name 
 import Data.List
 
 -- import           Data.Aeson.Types
@@ -33,23 +34,25 @@ import qualified GitHub.Auth as Auth
 -- formatUser :: GitHub.SimpleUser -> Text
 -- formatUser = GitHub.untagName . GitHub.simpleUserLogin
 user_crawler = pack "sneaker-rohit"
-user_token = pack "06636f084c1f3f291c4c720732d1d3ad413d6d63"
+user_token = pack "57e41d5ff5155037ff7fd696fd6d1ae168b50e5c"
 auth = (Just (Auth.BasicAuth user_crawler user_token))
 
 showFollowers :: IO ()
 showFollowers = do
 	possibleCommits <- Github.commit' auth "sneaker-rohit" "github-crawler" "HEAD"
-	--print possibleCommits
+	print possibleCommits
  --    let a = True
  --    case a of 
 	-- 	True -> putStrLn "true"
 	-- 	False -> putStrLn ""
 	case possibleCommits of 
- 		Left e  -> putStrLn $ "Error: " -- ++ (show e)
+ 		Left e  -> putStrLn $ "Error: " ++ (show e)
 		Right c -> putStrLn $ formatCommit c
 
 formatCommit :: Github.Commit -> String
-formatCommit c = "commit " ++ (Github.commitSha c) 
+formatCommit (Github.Commit (Name c) _ _ _ _ _ _) = "commit " ++ (show c) 
+
+
 
 -- 	case possibleCommits of
 -- 	    (Left error)    -> putStrLn $ "Error: " ++ (show error)
