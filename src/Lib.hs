@@ -54,6 +54,7 @@ import           Control.Monad.Cont
 
 type API = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
       :<|> "post-repo-info" :> ReqBody '[JSON] [RepoInfo] :> Post '[JSON] RepoInfoResponse
+      :<|> "repo-data" :>  ReqBody '[JSON] [RepoData] :> Post '[JSON] RepoDataForProcessing
 
 newtype HelloMessage = HelloMessage { msg :: String }
   deriving Generic
@@ -66,6 +67,13 @@ data RepoDataForProcessing = RepoDataForProcessing
       , language            :: [String]
     } deriving Generic
 instance ToJSON RepoDataForProcessing
+
+--git_url
+--languages
+
+--dataGroup1 = RepoDataForProcessing git_url languages
+
+
 
 -- Data Handler for Group 2
 data RepoCommit = RepoCommit
@@ -128,6 +136,7 @@ api = Proxy
 server :: Server API
 server = hello
      :<|> postRepoInfo
+     :<|> postRepoData
 
   where
         hello :: Maybe String -> Handler HelloMessage
@@ -150,20 +159,53 @@ server = hello
                                                   g_token     = token repo
 
                 possibleUsers <- Users.userInfoFor' auth (fromString h_owner)
-                possibleLanguages <- Repos.languagesFor' auth (fromString h_owner) (fromString h_repo_name)
-                case possibleLanguages of
-                    (Left error) -> print ""
-                    (Right languages) -> do
-                        let listLanguagesKey = HM.keys languages
-                        let listLanguages = map getLanguage listLanguagesKey
-                        print listLanguages
+
+
+
+                  --      # Get total contributors
+                  --  # Sum all commit_number of each contributors
+                  --    # We send a couple of requests
+
+                  --    dataGroup2 = RepoCommit repo_url number_commit last_commit
+                  --     cientAPI dataGroup2
+
+                  --     dataGroup3 = RepoInfo
+
                 print possibleLanguages
 
             return $ RepoInfoResponse success
+            postRepoData ::  [RepoData] -> Handler RepoDataResponse
+            postRepoInfo repos = liftIO $ do
+
+                let repoCommit = []
+                let repoPreProcess = []
+                let success = True
+                let listLanguagesKey = []
+
+                forM_ repos $ \repo -> do
+                    let (h_owner, h_repo_name, h_token) = (g_repo_owner, g_repo_name, g_token)
+                                                where g_repo_owner = owner repo
+                                                      g_repo_name = repo_name repo
+                                                      g_token     = token repo
+
+                    possibleUsers <- Users.userInfoFor' auth (fromString h_owner)
+
+                  let dataGroup1 = RepoDataForProcessing git_url listLanguages
+                      where git_url = "https://github.com/" ++ h_owner repo ++ "/" ++ h_repo_name repo ++ ".git"
+                            possibleLanguages <- Repos.languagesFor' auth (fromString h_owner) (fromString h_repo_name)
+                            case possibleLanguages of
+                                (Left error) -> print ""
+                                (Right languages) -> do
+                                    let listLanguagesKey = HM.keys languages
+                                    let listLanguages = map getLanguage listLanguagesKey
+                                    print listLanguages
 
 getLanguage (Repos.Language name) = name
 userGithubGetId :: Users.Name Users.User -> T.Text
 userGithubGetId login = Users.untagName login
+
+
+
 
 -- | error stuff
 custom404Error msg = err404 { errBody = msg }
