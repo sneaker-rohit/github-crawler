@@ -34,7 +34,13 @@ library
                        , mtl
                        , bytestring
                        , unordered-containers
-  other-modules: Commit
+                       , tagsoup
+                       , http-client-tls
+                       , http-conduit
+                       , http-types
+
+  other-modules:        Commit, TotalCommit
+
   default-language:    Haskell2010
 
 executable github-crawler-exe

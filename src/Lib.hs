@@ -45,12 +45,20 @@ import           Data.Time.Format             (defaultTimeLocale, formatTime)
 import qualified GitHub as GH
 import qualified GitHub.Endpoints.Users.Followers as Followers
 import qualified GitHub.Endpoints.Users as Users
+
 import qualified GitHub.Endpoints.Repos as Repos
+import qualified GitHub.Endpoints.Repos.Commits as Github
+import qualified GitHub.Data.Name as Name
+
 import qualified GitHub.Auth as Auth
 
 import qualified Data.HashMap.Strict as HM
+
 -- loop for
 import           Control.Monad.Cont
+-- import           TotalCommit (totalCommit)
+
+import Commit (showCommit)
 
 type API = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
       :<|> "post-repo-info" :> ReqBody '[JSON] [RepoInfo] :> Post '[JSON] RepoInfoResponse
@@ -73,7 +81,7 @@ data RepoCommit = RepoCommit
          repo_url                :: String
        , number_of_commit        :: Int
        , last_commit             :: String
-    } deriving Generic
+    } deriving (Generic, Show)
 instance ToJSON RepoCommit
 
 -- Data Handler for Group 3
@@ -92,9 +100,10 @@ data RepoInfoResponse = RepoInfoResponse
 instance ToJSON RepoInfoResponse
 
 user_crawler = pack "vn09"
-user_token = pack "42e9ebf734bdc37cc99fc933d8724f8eaf6b2290"
+user_token = pack "3f16cd7951eb3b0a8d006c6a8286c3bb06dafcf7"
 auth = (Just (Auth.BasicAuth user_crawler user_token))
 
+-- startApp = showCommit
 -- Start server here
 startApp :: IO ()    -- set up wai logger for service to output apache style logging for rest calls
 startApp = withLogging $ \ aplogger -> do
@@ -139,8 +148,6 @@ server = hello
         postRepoInfo :: [RepoInfo] -> Handler RepoInfoResponse
         postRepoInfo repos = liftIO $ do
             -- Variables to store data from group 1 and group 2
-            let repoCommit = []
-            let repoPreProcess = []
             let success = True
 
             forM_ repos $ \repo -> do
@@ -149,18 +156,45 @@ server = hello
                                                   g_repo_name = repo_name repo
                                                   g_token     = token repo
 
-                possibleUsers <- Users.userInfoFor' auth (fromString h_owner)
-                possibleLanguages <- Repos.languagesFor' auth (fromString h_owner) (fromString h_repo_name)
-                case possibleLanguages of
-                    (Left error) -> print ""
-                    (Right languages) -> do
-                        let listLanguagesKey = HM.keys languages
-                        let listLanguages = map getLanguage listLanguagesKey
-                        print listLanguages
-                print possibleLanguages
+                let group1_data = RepoCommit git_url number_of_commit last_commit
+                        where git_url = "https://github.com/" ++ h_owner ++ "/" ++ h_repo_name ++ ".git"
+                              number_of_commit = 1234
+                              last_commit = liftIO $ do
+                                possibleCommits <- Github.commit' auth (fromString h_owner) (fromString h_repo_name) "HEAD"
+                                case possibleCommits of
+                                    Left e  -> show $ "Error: " ++ (show e)
+                                    Right c -> show $ formatCommit c
 
+                print group1_data
+
+                -- client group2_data
+                --     where
+                --         group2_data = RepoDataForProcessing git_url languages
+                --         where git_url =
+                --             languages = do
+                --                 possibleLanguages <- Repos.languagesFor' auth (fromString h_owner) (fromString h_repo_name)
+                --                 case possibleLanguages of
+                --                         (Left error) -> "Error: " ++ (show e)
+                --                         (Right languages) -> do
+                --                             let listLanguagesKey = HM.keys languages
+                --                             let listLanguages = map getLanguage listLanguagesKey
+                --                             return listLanguages
             return $ RepoInfoResponse success
 
+-- get lastCommit
+-- getLastCommit :: String -> String -> Github.Commit
+-- getLastCommit owner repo = do
+--     -- possibleCommits <- Github.commit' auth (fromString h_owner) (fromString h_repo_name) "HEAD"
+--     possibleCommits <- Github.commit' auth (fromString owner) (fromString repo) "HEAD"
+--     case possibleCommits of
+--         Left e  ->  show "aaa"
+--         Right c ->  show $ formatCommit c
+
+-- Get only commit thing
+formatCommit :: Github.Commit -> String
+formatCommit (Github.Commit (Name.N c) _ _ _ _ _ _ _) = T.unpack c
+
+-- Get only language thing
 getLanguage (Repos.Language name) = name
 userGithubGetId :: Users.Name Users.User -> T.Text
 userGithubGetId login = Users.untagName login
