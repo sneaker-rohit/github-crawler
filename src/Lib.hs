@@ -42,15 +42,12 @@ import           System.Environment           (getArgs, getProgName, lookupEnv)
 import           Data.Time.Clock              (UTCTime, getCurrentTime)
 import           Data.Time.Format             (defaultTimeLocale, formatTime)
 
-import qualified GitHub as GH
-import qualified GitHub.Endpoints.Users.Followers as Followers
-import qualified GitHub.Endpoints.Users as Users
-import qualified GitHub.Endpoints.Repos as Repos
-import qualified GitHub.Auth as Auth
-
-import qualified Data.HashMap.Strict as HM
 -- loop for
 import           Control.Monad.Cont
+
+-- Internal file source
+import           Commit (getLastCommit, getLanguage)
+import           TotalCommit (getTotalCommit)
 
 type API = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
       :<|> "post-repo-info" :> ReqBody '[JSON] [RepoInfo] :> Post '[JSON] RepoInfoResponse
@@ -64,7 +61,7 @@ data RepoDataForProcessing = RepoDataForProcessing
     {
         git_url             :: String
       , language            :: [String]
-    } deriving Generic
+    } deriving (Generic, Show)
 instance ToJSON RepoDataForProcessing
 
 -- Data Handler for Group 2
@@ -73,7 +70,7 @@ data RepoCommit = RepoCommit
          repo_url                :: String
        , number_of_commit        :: Int
        , last_commit             :: String
-    } deriving Generic
+    } deriving (Generic, Show)
 instance ToJSON RepoCommit
 
 -- Data Handler for Group 3
@@ -81,19 +78,15 @@ data RepoInfo = RepoIno
     {   repo_name   :: String,
         owner       :: String,
         token       :: String
-    } deriving Generic
+    } deriving (Generic)
 instance ToJSON RepoInfo
 instance FromJSON RepoInfo
 
 data RepoInfoResponse = RepoInfoResponse
     {
         success     :: Bool
-    } deriving Generic
+    } deriving (Generic)
 instance ToJSON RepoInfoResponse
-
-user_crawler = pack "vn09"
-user_token = pack "42e9ebf734bdc37cc99fc933d8724f8eaf6b2290"
-auth = (Just (Auth.BasicAuth user_crawler user_token))
 
 -- Start server here
 startApp :: IO ()    -- set up wai logger for service to output apache style logging for rest calls
@@ -138,9 +131,6 @@ server = hello
         -- Process info from group 3
         postRepoInfo :: [RepoInfo] -> Handler RepoInfoResponse
         postRepoInfo repos = liftIO $ do
-            -- Variables to store data from group 1 and group 2
-            let repoCommit = []
-            let repoPreProcess = []
             let success = True
 
             forM_ repos $ \repo -> do
@@ -149,21 +139,29 @@ server = hello
                                                   g_repo_name = repo_name repo
                                                   g_token     = token repo
 
-                possibleUsers <- Users.userInfoFor' auth (fromString h_owner)
-                possibleLanguages <- Repos.languagesFor' auth (fromString h_owner) (fromString h_repo_name)
-                case possibleLanguages of
-                    (Left error) -> print ""
-                    (Right languages) -> do
-                        let listLanguagesKey = HM.keys languages
-                        let listLanguages = map getLanguage listLanguagesKey
-                        print listLanguages
-                print possibleLanguages
+                -- Repo URL: https://github.com/vn09/servant-api
+                let repo_url = "https://github.com/" ++ h_owner ++ "/" ++ h_repo_name
+
+                -- Note: with IO String, "<-" action will return String
+                -- For example:
+                -- functionA :: String -> IO String
+                -- a <- functionA "foo bar", then a has type String
+                -- Thanks: http://stackoverflow.com/questions/1675366/a-haskell-function-of-type-io-string-string
+
+                languages        <- getLanguage h_owner h_repo_name
+                last_commit      <- getLastCommit h_owner h_repo_name
+                number_of_commit <- getTotalCommit repo_url
+
+                let group1_data = RepoDataForProcessing git_url languages
+                        where git_url = repo_url ++ ".git"
+
+                let group2_data = RepoCommit repo_url number_of_commit last_commit
+
+                print group1_data
+                print group2_data
 
             return $ RepoInfoResponse success
 
-getLanguage (Repos.Language name) = name
-userGithubGetId :: Users.Name Users.User -> T.Text
-userGithubGetId login = Users.untagName login
 
 -- | error stuff
 custom404Error msg = err404 { errBody = msg }
