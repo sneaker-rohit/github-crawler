@@ -31,6 +31,6 @@ curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d
 ]' "http://localhost:8080/post-repo-info"
 ```
 
-# Resouces
+# Resoucessss
 * [UPenn course](http://www.seas.upenn.edu/~cis194/fall16/)
 
