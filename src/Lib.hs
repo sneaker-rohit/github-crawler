@@ -49,38 +49,14 @@ import           Control.Monad.Cont
 import           Commit (getLastCommit, getLanguage)
 import           TotalCommit (getTotalCommit)
 
+import           CommonLib as CL
+
 type API = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
       :<|> "post-repo-info" :> ReqBody '[JSON] [RepoInfo] :> Post '[JSON] RepoInfoResponse
 
 newtype HelloMessage = HelloMessage { msg :: String }
   deriving Generic
 instance ToJSON HelloMessage
-
--- Data Handler for Group 1
-data RepoDataForProcessing = RepoDataForProcessing
-    {
-        git_url             :: String
-      , language            :: [String]
-    } deriving (Generic, Show)
-instance ToJSON RepoDataForProcessing
-
--- Data Handler for Group 2
-data RepoCommit = RepoCommit
-    {
-         repo_url                :: String
-       , number_of_commit        :: Int
-       , last_commit             :: String
-    } deriving (Generic, Show)
-instance ToJSON RepoCommit
-
--- Data Handler for Group 3
-data RepoInfo = RepoIno
-    {   repo_name   :: String,
-        owner       :: String,
-        token       :: String
-    } deriving (Generic)
-instance ToJSON RepoInfo
-instance FromJSON RepoInfo
 
 data RepoInfoResponse = RepoInfoResponse
     {
@@ -129,15 +105,15 @@ server = hello
           Just n  -> "Hello, " ++ n
 
         -- Process info from group 3
-        postRepoInfo :: [RepoInfo] -> Handler RepoInfoResponse
+        postRepoInfo :: [CL.RepoInfo] -> Handler RepoInfoResponse
         postRepoInfo repos = liftIO $ do
             let success = True
 
             forM_ repos $ \repo -> do
                 let (h_owner, h_repo_name, h_token) = (g_repo_owner, g_repo_name, g_token)
-                                            where g_repo_owner = owner repo
-                                                  g_repo_name = repo_name repo
-                                                  g_token     = token repo
+                                            where g_repo_owner = CL.owner repo
+                                                  g_repo_name = CL.repo_name repo
+                                                  g_token     = CL.token repo
 
                 -- Repo URL: https://github.com/vn09/servant-api
                 let repo_url = "https://github.com/" ++ h_owner ++ "/" ++ h_repo_name
@@ -152,10 +128,10 @@ server = hello
                 last_commit      <- getLastCommit h_owner h_repo_name
                 number_of_commit <- getTotalCommit repo_url
 
-                let group1_data = RepoDataForProcessing git_url languages
+                let group1_data = CL.RepoDataForProcessing git_url languages
                         where git_url = repo_url ++ ".git"
 
-                let group2_data = RepoCommit repo_url number_of_commit last_commit
+                let group2_data = CL.RepoCommit repo_url number_of_commit last_commit
 
                 print group1_data
                 print group2_data
