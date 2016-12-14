@@ -37,8 +37,21 @@ resolver: lts-7.7
 # A package marked 'extra-dep: true' will only be built if demanded by a
 # non-dependency (i.e. a user package), and its test suites and benchmarks
 # will not be run. This is useful for tweaking upstream packages.
+docker:
+  enable: false # warning!
+
+# stack image container
+image:
+  container:
+    name: use-haskell
+    base: fpco/stack-run
+
 packages:
 - '.'
+- location:
+    git: https://github.com/vn09/common-lib.git
+    commit: c77afb89e1bb0a27bc14fea35ce6bb2faec0cbc0
+
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
