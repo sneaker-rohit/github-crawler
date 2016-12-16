@@ -39,6 +39,7 @@ library
                        , http-conduit
                        , http-types
                        , common-lib
+                       , dotenv
 
   other-modules:        Commit, TotalCommit
 

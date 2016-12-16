@@ -50,13 +50,12 @@ import           Commit (getLastCommit, getLanguage)
 import           TotalCommit (getTotalCommit)
 
 import           CommonLib as CL
+import qualified Configuration.Dotenv as Dotenv
+import           System.Environment as SE
+import qualified GitHub.Auth as Auth
 
 type API = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
       :<|> "post-repo-info" :> ReqBody '[JSON] [RepoInfo] :> Post '[JSON] RepoInfoResponse
-
-newtype HelloMessage = HelloMessage { msg :: String }
-  deriving Generic
-instance ToJSON HelloMessage
 
 data RepoInfoResponse = RepoInfoResponse
     {
@@ -99,8 +98,8 @@ server = hello
      :<|> postRepoInfo
 
   where
-        hello :: Maybe String -> Handler HelloMessage
-        hello mname = return . HelloMessage $ case mname of
+        hello :: Maybe String -> Handler CL.HelloMessage
+        hello mname = return . CL.HelloMessage $ case mname of
           Nothing -> "Hello, anonymous coward"
           Just n  -> "Hello, " ++ n
 
@@ -110,6 +109,10 @@ server = hello
             let success = True
 
             forM_ repos $ \repo -> do
+                Dotenv.loadFile False "config.conf"
+                token <- SE.getEnv "GITHUB_TOKEN"
+                let auth = (Just (Auth.OAuth (pack token)))
+
                 let (h_owner, h_repo_name, h_token) = (g_repo_owner, g_repo_name, g_token)
                                             where g_repo_owner = CL.owner repo
                                                   g_repo_name = CL.repo_name repo
@@ -124,8 +127,8 @@ server = hello
                 -- a <- functionA "foo bar", then a has type String
                 -- Thanks: http://stackoverflow.com/questions/1675366/a-haskell-function-of-type-io-string-string
 
-                languages        <- getLanguage h_owner h_repo_name
-                last_commit      <- getLastCommit h_owner h_repo_name
+                languages        <- getLanguage h_owner h_repo_name auth
+                last_commit      <- getLastCommit h_owner h_repo_name auth
                 number_of_commit <- getTotalCommit repo_url
 
                 let group1_data = CL.RepoDataForProcessing git_url languages

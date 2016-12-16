@@ -8,8 +8,13 @@ stack build
 ```
 
 # How to test
-## Run server
+## Github Token
+Currently, Github limits [Rate limit](https://developer.github.com/v3/#rate-limiting) for unauthenticated user is 60 requests / hour. To get more request, we need to make request using Basic Authentication or OAuth, we can make up to 5000 requests per hour. In this program, we tend to use OAuth request.
 
+If you don't have token, you can go to [Token page](https://github.com/settings/tokens) to generate the new one.
+
+Copy file `_config.conf` to `config.conf` and config your OAuth token here.
+## Run server
 ```
 stack exec github-api-exe
 ```

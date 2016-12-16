@@ -32,15 +32,17 @@ import qualified Data.ByteString.Lazy.Char8 as B
 
 import           Control.Monad.Cont (liftIO)
 
-user_crawler = pack "scss-cs7051"
-user_token = pack "677b3230c6ab76d126a54ed221ce0ee0765ce79c"
-
-auth = (Just (Auth.BasicAuth user_crawler user_token))
+-------------------sample code for private token -------------------
+-- This leaves as the reference for private token
+-- user_crawler = pack "scss-cs7051"
+-- user_token = pack "677b3230c6ab76d126a54ed221ce0ee0765ce79c"
+-- auth = (Just (Auth.BasicAuth user_crawler user_token))
+--------------------------------------------------------------------
 
 ------------------------------ Commit ------------------------------
 -- Get last commit
-getLastCommit :: String -> String -> IO String
-getLastCommit owner repo_name = liftIO $ do
+getLastCommit :: String -> String -> Maybe Auth.Auth-> IO String
+getLastCommit owner repo_name auth = liftIO $ do
     possibleCommits <- Commits.commit' auth (fromString owner) (fromString repo_name) "HEAD"
     case possibleCommits of
         Left e  -> return $ "Error: " ++ (show e)
@@ -55,8 +57,8 @@ convertStringToInt str = read str :: Int
 
 ------------------------------ Language ------------------------------
 -- Get languages
-getLanguage :: String -> String -> IO [String]
-getLanguage owner repo = liftIO $ do
+getLanguage :: String -> String -> Maybe Auth.Auth -> IO [String]
+getLanguage owner repo auth = liftIO $ do
     possibleLanguages <- Repos.languagesFor' auth (fromString owner) (fromString repo)
     case possibleLanguages of
         (Left error) -> return []
