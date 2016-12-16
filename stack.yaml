@@ -50,7 +50,7 @@ packages:
 - '.'
 - location:
     git: https://github.com/vn09/common-lib.git
-    commit: c77afb89e1bb0a27bc14fea35ce6bb2faec0cbc0
+    commit: fcce49e61be4c345e9936dc08cf5d3d64574f901
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
