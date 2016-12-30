@@ -54,6 +54,8 @@ import qualified Configuration.Dotenv as Dotenv
 import           System.Environment as SE
 import qualified GitHub.Auth as Auth
 
+import           Client (runG1, runG2)
+
 type API = "hello" :> QueryParam "name" String :> Get '[JSON] HelloMessage
       :<|> "post-repo-info" :> ReqBody '[JSON] [RepoInfo] :> Post '[JSON] RepoInfoResponse
 
